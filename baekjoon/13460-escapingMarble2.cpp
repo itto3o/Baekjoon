@@ -27,6 +27,12 @@ using namespace std;
 
 int main()
 {
+	// count, 답
+	int count_ans = 0;
+
+	// 방향 정하기
+	char direction = 'n';
+
 	// N, M 받기
 	int N = 0;
 	int M = 0;
@@ -48,26 +54,36 @@ int main()
 			cin >> board[n][m];
 		}
 	}
+
+	//for (int n = 0; n < N; n++)
+	//{
+	//	for (int m = 0; m < M; m++)
+	//		cout << "(" << n << "," << m << "), " << board[n][m] << "\t";
+	//	cout << endl;
+	//}
 		
-	// R의 위치를 파악해서
-	int Rx = 0;
-	int Ry = 0;
-	int Bx = 0;
-	int By = 0;
+	// R의 위치를 파악해서 //근데 Ox로 선언해도 되나..? 아 그건 0x구나
+	int Rx = 0, Ry = 0, Bx = 0, By = 0, Ox = 0, Oy = 0;
 	for (int n = 0; n < N; n++)
 	{
 		for (int m = 0; m < M; m++)
 		{
 			if (board[n][m] == 'R') 
 			{
-				Rx = m;
-				Ry = n;
+				Ry = m;
+				Rx = n;
 			}
 
 			if (board[n][m] == 'B')
 			{
-				Bx = m;
-				By = n;
+				By = m;
+				Bx = n;
+			}
+
+			if (board[n][m] == 'O')
+			{
+				Oy = m;
+				Ox = n;
 			}
 		}
 	}
@@ -76,24 +92,39 @@ int main()
 	{
 		// 갈 수 있는 길의 방향을 정함 (만약 둘다 갈 수 있다면..? (이 경우는 잘 모르겠네..))
 		// 위, 아래, 왼쪽, 오른쪽 모두 파악 (u, d, l, r)
-		char direction = 'n';
+		//direction = 'n';
 
 		// u
 		// 위로 갈 수 있고, 이전 direction이 d가 아닐 때 (다시 돌아가지 않기 위해) u으로바꾸기
-		if (board[Rx][Ry - 1] == '.' && direction != 'd')
+
+		// 아니 이거 == 할때는 (x,y)로 받고 =인건 (y,x)라서 하..
+		// 근데 그게 아니라 x-1로 해서 하면 될듯?
+		if (board[Rx - 1][Ry] == '.' && direction != 'd')
+		{
 			direction = 'u';
+			count_ans++;
+		}
 
 		// d
-		else if (board[Rx][Ry + 1] == '.' && direction != 'u')
+		else if (board[Rx + 1][Ry] == '.' && direction != 'u')
+		{
 			direction = 'd';
+			count_ans++;
+		}
 
 		// l
-		else if (board[Rx - 1][Ry] == '.' && direction != 'r')
+		else if (board[Rx][Ry - 1] == '.' && direction != 'r')
+		{
 			direction = 'l';
+			count_ans++;
+		}
 
 		// r
-		else if (board[Rx + 1][Ry] == '.' && direction != 'l')
+		else if (board[Rx][Ry + 1] == '.' && direction != 'l')
+		{
 			direction = 'r';
+			count_ans++;
+		}
 
 		// none : #이거나 o이거나..?
 		else
@@ -104,8 +135,72 @@ int main()
 		switch (direction)
 		{
 		case 'u':
-			while (true) {
-				if (board[Rx][Ry - 1] == 'O') {
+			while (true) 
+			{
+				if (board[Rx - 1][Ry] == 'O') 
+				{
+					direction = 'o';
+					break;
+				}
+
+				if (board[Rx - 1][Ry] == '.')
+				{
+					board[Rx - 1][Ry] = 'R';
+					// 여기서만 갑자기 [Rx][Ry]하니까 Rx번째 줄의 Ry번째를 읽어와서 바꿈
+					// ==> (y,x)좌표를 읽어온단 뜻... ==> Ry, Rx로 바꿔줌
+					// ==> (x,y) 하려고 했었는데 그러려면 처음부터 Ry, Rx를 해야했던것
+					board[Rx][Ry] = '.';
+					Rx -= 1;
+
+					if (board[Bx - 1][By] == '.')
+					{
+						board[Bx - 1][By] = 'B';
+						board[Bx][By] = '.';
+						Bx -= 1;
+					}
+				}
+
+				else
+				{
+					direction = 'n';
+					break;
+				}
+			}
+			break;
+		case 'd':
+			while (true) 
+			{
+				if (board[Rx + 1][Ry] == 'O') 
+				{
+					direction = 'o';
+					break;
+				}
+
+				if (board[Rx + 1][Ry] == '.') 
+				{
+					board[Rx + 1][Ry] = 'R';
+					board[Rx][Ry] = '.';
+					Rx += 1;
+					if (board[Bx + 1][By] == '.')
+					{
+						board[Bx + 1][By] = 'B';
+						board[Bx][By] = '.';
+						Bx += 1;
+					}
+				}
+
+				else
+				{
+					direction = 'n';
+					break;
+				}
+			}
+			break;
+		case 'l':
+			while (true)
+			{
+				if (board[Rx][Ry - 1] == 'O')
+				{
 					direction = 'o';
 					break;
 				}
@@ -115,7 +210,6 @@ int main()
 					board[Rx][Ry - 1] = 'R';
 					board[Rx][Ry] = '.';
 					Ry -= 1;
-
 					if (board[Bx][By - 1] == '.')
 					{
 						board[Bx][By - 1] = 'B';
@@ -131,9 +225,10 @@ int main()
 				}
 			}
 			break;
-		case 'd':
-			while (true) {
-				if (board[Rx][Ry + 1] == 'O') 
+		case 'r':
+			while (true)
+			{
+				if (board[Rx][Ry + 1] == 'O')
 				{
 					direction = 'o';
 					break;
@@ -151,63 +246,6 @@ int main()
 						By += 1;
 					}
 				}
-
-				else
-				{
-					direction = 'n';
-					break;
-				}
-			}
-			break;
-		case 'l':
-			while (true)
-			{
-				if (board[Rx - 1][Ry] == 'O')
-				{
-					direction = 'o';
-					break;
-				}
-
-				if (board[Rx - 1][Ry] == '.')
-				{
-					board[Rx - 1][Ry] = 'R';
-					board[Rx][Ry] = '.';
-					Rx -= 1;
-					if (board[Bx - 1][By] == '.')
-					{
-						board[Bx - 1][By] = 'B';
-						board[Bx][By] = '.';
-						Bx -= 1;
-					}
-				}
-
-				else
-				{
-					direction = 'n';
-					break;
-				}
-			}
-			break;
-		case 'r':
-			while (true)
-			{
-				if (board[Rx + 1][Ry] == 'O')
-				{
-					direction = 'o';
-					break;
-				}
-
-				if (board[Rx + 1][Ry] == '.') {
-					board[Rx + 1][Ry] = 'R';
-					board[Rx][Ry] = '.';
-					Rx += 1;
-					if (board[Bx + 1][By] == '.')
-					{
-						board[Bx + 1][By] = 'B';
-						board[Bx][By] = '.';
-						Bx += 1;
-					}
-				}
 				else
 				{
 					direction = 'n';
@@ -219,9 +257,15 @@ int main()
 			break;
 		}
 
-		
+		if (direction == 'n' || direction == 'o')
+			break;
 		// R이 더이상 갈 곳이 없으면 다시 방향을 선택
 	}
+
+	if (direction == 'n')
+		count_ans = -1;
+
+	std::cout << count_ans << endl;
 
 	for (int n = 0; n < N; n++)
 		delete[] board[n];
