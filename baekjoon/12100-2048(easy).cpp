@@ -25,6 +25,13 @@
 * 2 16 4 0
 * 
 * 출력) 16
+* 
+* 채점해봤는데
+* 채점 준비? -> 시작 -> 채점중() -> 바로 틀렸습니다 뜨는데 ㅋㅋㅋㅋㅋㅋ
+* 아나 %도 안나오는건 처음이네..
+* 근데 웬만한건 다 되는듯 얘 천재인가 싶음 ㄹㅇ
+* 백준은 근데 예외처리를 다 해줘야 한대...
+* 못해먹겠네....
 */
 
 // 1. 0을 제외한 블록 중 같은 게 있으면 일단 같은 선상에 있도록 해야하나
@@ -138,6 +145,7 @@ int decide_diretion(vector<coordinate>* number, int *countX, int *countY)
 
 void push_left(int** block, int N)
 {
+	vector<coordinate> updatedNumber;
 	// 0,1				1,1				2,1				3,1
 	// 0,2 0,1			1,2 1,1			2,2 2,1			3,2 3,1
 	// 0,3 0,2 0,1 0,0	1,3 1,2 1,1 1,0	 2,3 2,2 2,1 2,0  3,3 3,2 3,1 3,0
@@ -148,19 +156,45 @@ void push_left(int** block, int N)
 		{
 			for (int k = i; k > 0; k--)
 			{
-				if (block[j][k - 1] == block[j][k] || block[j][k - 1] == 0)
+				// 바꾸려는 곳이 0이라면 교환
+				if (block[j][k - 1] == 0)
 				{
+					int temp = block[j][k - 1];
+					block[j][k - 1] = block[j][k];
+					block[j][k] = temp;
+				}
+
+				else if (block[j][k - 1] == block[j][k])
+				{
+					bool flag = false;
+					// 같은 경우라면 합쳐야 하는데,
+					// 이미 합쳐진 경우면 pass
+					for (coordinate& un : updatedNumber)
+					{
+						if (un.y == j && un.x == k - 1)
+						{
+							flag = true;
+							break;
+						}
+					}
+					if (flag == true)
+						continue;
+
 					block[j][k - 1] += block[j][k];
 					block[j][k] = 0;
+					updatedNumber.push_back(coordinate{ j, k - 1 });
 				}
 			}
 
 		}
 	}
+	updatedNumber.clear();
+	//delete &updatedNumber;
 }
 
 void push_right(int** block, int N)
 {
+	vector<coordinate> updatedNumber;
 	// 0,3 1,3 2,3 3,3
 	// 0,2 0,3 1,2 1,3 2,2 2,3 3,2 3,3
 	for (int i = N - 1; i > 0; i--)
@@ -169,18 +203,41 @@ void push_right(int** block, int N)
 		{
 			for (int k = i; k < N; k++)
 			{
-				if (block[j][k] == block[j][k - 1] || block[j][k] == 0)
+				// 바꾸려는 곳이 0이라면 교환
+				if (block[j][k] == 0)
 				{
+					int temp = block[j][k];
+					block[j][k] = block[j][k - 1];
+					block[j][k - 1] = temp;
+				}
+
+				else if (block[j][k] == block[j][k - 1])
+				{
+					bool flag = false;
+					for (coordinate& un : updatedNumber)
+					{
+						if (un.y == j && un.x == k)
+						{
+							flag = true;
+							break;
+						}
+					}
+					if (flag == true)
+						continue;
+
 					block[j][k] += block[j][k - 1];
 					block[j][k - 1] = 0;
+					updatedNumber.push_back(coordinate{ j, k });
 				}
 			}
 		}
 	}
+	updatedNumber.clear();
 }
 
 void push_up(int** block, int N)
 {
+	vector<coordinate> updatedNumber;
 	// 1,0 1,1 1,2 1,3
 	// 2,0 1,0  2,1 1,1  2,2 1,2  2,3 1,3
 	for (int i = 1; i < N; i++)
@@ -189,7 +246,8 @@ void push_up(int** block, int N)
 		{
 			for (int j = 0; j < N; j++)
 			{
-				if (block[k - 1][j] == block[k][j] || block[k - 1][j] == 0)
+				// 바꾸려는 곳이 0이라면 교환
+				if (block[k - 1][j] == 0)
 				{
 					// 4
 					// 4
@@ -197,16 +255,45 @@ void push_up(int** block, int N)
 					// 8
 					// 일 경우에 8로 합쳐졌는데 뒤에 바로 8이랑 합쳐져서 16이 됨...
 					// ==> 이미 합쳐진 좌표면 제외하는걸 넣어야하나
+					// 이미 합쳐진 좌표면 vector에 넣고 foreach문으로 넣고 더이상 안합쳐지게,
+					// 0인 경우를 따로 만들자
+					int temp = block[k - 1][j];
+					block[k - 1][j] = block[k][j];
+					block[k][j] = temp;
+				}
+
+				else if (block[k - 1][j] == block[k][j])
+				{
+					bool flag = false;
+					// 같은 경우라면 합쳐야 하는데,
+					// 이미 합쳐진 경우면 pass
+					for (coordinate& un : updatedNumber)
+					{
+						// 합치려는 곳이 un에 포함되어있는 좌표라면
+						if (un.y == k - 1 && un.x == j)
+						{
+							flag = true;
+							break;
+						}
+						// 여기다 continue를 썼더니 foreach문을 다시 돌아서...
+						// 어쩔수없이 플래그 사용
+					}
+					if (flag == true)
+						continue;
+
 					block[k - 1][j] += block[k][j];
 					block[k][j] = 0;
+					updatedNumber.push_back(coordinate{ k - 1, j });
 				}
 			}
 		}
 	}
+	updatedNumber.clear();
 }
 
 void push_down(int** block, int N)
 {
+	vector<coordinate> updatedNumber;
 	// 3,0 3,1 3,2 3,3
 	// 2,0 3,0  2,1 3,1  2,2 3,2  2,3 3,3
 	for (int i = N - 1; i > 0; i--)
@@ -215,14 +302,35 @@ void push_down(int** block, int N)
 		{
 			for (int k = i; k < N; k++)
 			{
-				if (block[k][j] == block[k - 1][j] || block[k][j] == 0)
+				if (block[k][j] == 0)
 				{
+					int temp = block[k][j];
+					block[k][j] = block[k - 1][j];
+					block[k - 1][j] = temp;
+				}
+
+				else if (block[k][j] == block[k - 1][j])
+				{
+					bool flag = false;
+					for (coordinate& un : updatedNumber)
+					{
+						if (un.y == k && un.x == j)
+						{
+							flag = true;
+							break;
+						}
+					}
+					if (flag == true)
+						continue;
+
 					block[k][j] += block[k - 1][j];
 					block[k - 1][j] = 0;
+					updatedNumber.push_back(coordinate{ k, j });
 				}
 			}
 		}
 	}
+	updatedNumber.clear();
 }
 
 int main() {
@@ -328,13 +436,13 @@ int main() {
 				push_right(block, N);
 
 			// 결과 보기
-			for (int i = 0; i < N; i++)
-			{
-				for (int j = 0; j < N; j++)
-					cout << block[i][j] << "\t";
-				cout << endl;
-			}
-			cout << endl;
+			//for (int i = 0; i < N; i++)
+			//{
+			//	for (int j = 0; j < N; j++)
+			//		cout << block[i][j] << "\t";
+			//	cout << endl;
+			//}
+			//cout << endl;
 		}
 		else
 		{
@@ -357,13 +465,13 @@ int main() {
 				push_down(block, N);
 
 			// 결과 보기
-			for (int i = 0; i < N; i++)
-			{
-				for (int j = 0; j < N; j++)
-					cout << block[i][j] << "\t";
-				cout << endl;
-			}
-			cout << endl;
+			//for (int i = 0; i < N; i++)
+			//{
+			//	for (int j = 0; j < N; j++)
+			//		cout << block[i][j] << "\t";
+			//	cout << endl;
+			//}
+			//cout << endl;
 		}
 
 		for (int n = 0; n < N; n++)
