@@ -141,7 +141,7 @@ public :
 	}
 };
 
-
+/* 다른 cpp파일에서 main이 중복선언 되었다고 떠서
 int main()
 {
 	Marble* R = new Marble();
@@ -420,4 +420,4 @@ int main()
 	for (int n = 0; n < N; n++)
 		delete[] board[n];
 	delete[] board;
-}
+} */
