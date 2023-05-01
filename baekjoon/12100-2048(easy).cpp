@@ -32,6 +32,11 @@
 * 근데 웬만한건 다 되는듯 얘 천재인가 싶음 ㄹㅇ
 * 백준은 근데 예외처리를 다 해줘야 한대...
 * 못해먹겠네....
+* 
+* 생각해보니까 1024들 합쳐도 돼서 vector에 10까지만 있으면 될 게 아니네
+* 그리고 아무 방향이나 해도 상관없을 때 어떻게 할지도 문제고
+* 거리가 1일때만 그 방향으로 return되게 해놨는데 왜 저렇게 많이 뜰 수 있는지도 의문...
+* 생각보다 고쳐야할 게 많아서 이쯤에서 포기...
 */
 
 // 1. 0을 제외한 블록 중 같은 게 있으면 일단 같은 선상에 있도록 해야하나
@@ -52,6 +57,7 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <random>
 
 #define MAX_NUM 11
 
@@ -62,16 +68,34 @@ struct coordinate{
 	int x; //배열 상 [y][x]기 때문에
 };
 
-char direction(coordinate A, coordinate B)
+struct DR {
+	char dr = 'o';
+	int delta = 0;
+};
+
+DR direction(coordinate A, coordinate B)
 {
+	DR dr;
+
 	int subX = abs(A.x - B.x); // 음수가 나올 걸 대비해서 절대값
 	int subY = abs(A.y - B.y);
-	if (subX > subY)
-		return 'x';
-	else if (subX < subY)
-		return 'y';
-	else
-		return 'o';
+
+	if (subX == 1 || subY == 1)
+	{
+		if (subX > subY)
+		{
+			dr.dr = 'x';
+			dr.delta = subX;
+			return dr;
+		}
+		else if (subX < subY)
+		{
+			dr.dr = 'y';
+			dr.delta = subY;
+			return dr;
+		}
+	}
+	return dr;
 }
 
 int divideBy2(int number)
@@ -109,6 +133,7 @@ int decide_diretion(vector<coordinate>* number, int *countX, int *countY)
 	// 혹시 모르니까 초기화
 	*countX = 0;
 	*countY = 0;
+	//int sum = 0;
 
 	// 0은 제외하고
 	for (int i = 1; i < MAX_NUM; i++)
@@ -129,11 +154,17 @@ int decide_diretion(vector<coordinate>* number, int *countX, int *countY)
 
 					// 4
 					// 0,1  0,2  0,3  1,2  1,3  2,3
-					char d = direction(number[i].at(j), number[i].at(k));
-					if (d == 'x')
+					DR dr = direction(number[i].at(j), number[i].at(k));
+					if (dr.dr == 'x')
+					{
 						(*countX)++;
-					else if(d == 'y')
+						//sum += dr.delta;
+					}
+					else if (dr.dr == 'y')
+					{
 						(*countY)++;
+						//sum += dr.delta;
+					}
 				}
 
 			}
@@ -171,7 +202,7 @@ void push_left(int** block, int N)
 					// 이미 합쳐진 경우면 pass
 					for (coordinate& un : updatedNumber)
 					{
-						if (un.y == j && un.x == k - 1)
+						if ((un.y == j && un.x == k - 1) || (un.y == j && un.x == k))
 						{
 							flag = true;
 							break;
@@ -183,6 +214,7 @@ void push_left(int** block, int N)
 					block[j][k - 1] += block[j][k];
 					block[j][k] = 0;
 					updatedNumber.push_back(coordinate{ j, k - 1 });
+					//updatedNumber.push_back(coordinate{ j, k });
 				}
 			}
 
@@ -201,22 +233,22 @@ void push_right(int** block, int N)
 	{
 		for (int j = 0; j < N; j++)
 		{
-			for (int k = i; k < N; k++)
+			for (int k = i - 1; k < N - 1; k++)
 			{
 				// 바꾸려는 곳이 0이라면 교환
-				if (block[j][k] == 0)
+				if (block[j][k + 1] == 0)
 				{
-					int temp = block[j][k];
-					block[j][k] = block[j][k - 1];
-					block[j][k - 1] = temp;
+					int temp = block[j][k + 1];
+					block[j][k + 1] = block[j][k];
+					block[j][k] = temp;
 				}
 
-				else if (block[j][k] == block[j][k - 1])
+				else if (block[j][k + 1] == block[j][k])
 				{
 					bool flag = false;
 					for (coordinate& un : updatedNumber)
 					{
-						if (un.y == j && un.x == k)
+						if ((un.y == j && un.x == k + 1) || (un.y == j && un.x == k))
 						{
 							flag = true;
 							break;
@@ -225,9 +257,10 @@ void push_right(int** block, int N)
 					if (flag == true)
 						continue;
 
-					block[j][k] += block[j][k - 1];
-					block[j][k - 1] = 0;
-					updatedNumber.push_back(coordinate{ j, k });
+					block[j][k + 1] += block[j][k];
+					block[j][k] = 0;
+					updatedNumber.push_back(coordinate{ j, k + 1 });
+					//updatedNumber.push_back(coordinate{ j, k });
 				}
 			}
 		}
@@ -270,7 +303,7 @@ void push_up(int** block, int N)
 					for (coordinate& un : updatedNumber)
 					{
 						// 합치려는 곳이 un에 포함되어있는 좌표라면
-						if (un.y == k - 1 && un.x == j)
+						if ((un.y == k - 1 && un.x == j) || (un.y == j && un.x == k))
 						{
 							flag = true;
 							break;
@@ -284,6 +317,7 @@ void push_up(int** block, int N)
 					block[k - 1][j] += block[k][j];
 					block[k][j] = 0;
 					updatedNumber.push_back(coordinate{ k - 1, j });
+					//updatedNumber.push_back(coordinate{ k, j });
 				}
 			}
 		}
@@ -300,21 +334,21 @@ void push_down(int** block, int N)
 	{
 		for (int j = 0; j < N; j++)
 		{
-			for (int k = i; k < N; k++)
+			for (int k = i - 1; k < N - 1; k++)
 			{
-				if (block[k][j] == 0)
+				if (block[k + 1][j] == 0)
 				{
-					int temp = block[k][j];
-					block[k][j] = block[k - 1][j];
-					block[k - 1][j] = temp;
+					int temp = block[k + 1][j];
+					block[k + 1][j] = block[k][j];
+					block[k][j] = temp;
 				}
 
-				else if (block[k][j] == block[k - 1][j])
+				else if (block[k + 1][j] == block[k][j])
 				{
 					bool flag = false;
 					for (coordinate& un : updatedNumber)
 					{
-						if (un.y == k && un.x == j)
+						if ((un.y == k + 1 && un.x == j) || (un.y == j && un.x == k))
 						{
 							flag = true;
 							break;
@@ -323,14 +357,33 @@ void push_down(int** block, int N)
 					if (flag == true)
 						continue;
 
-					block[k][j] += block[k - 1][j];
-					block[k - 1][j] = 0;
-					updatedNumber.push_back(coordinate{ k, j });
+					block[k + 1][j] += block[k][j];
+					block[k][j] = 0;
+					updatedNumber.push_back(coordinate{ k + 1, j });
+					//updatedNumber.push_back(coordinate{ k, j });
 				}
 			}
 		}
 	}
 	updatedNumber.clear();
+}
+
+void init(int N, int** block, int** block_copy, vector<coordinate>* number, int* countX, int* countY)
+{
+	// number init
+	for (int i = 0; i < MAX_NUM; i++)
+		number[i].clear();
+
+	// block init
+	for (int i = 0; i < N; i++)
+	{
+		for (int j = 0; j < N; j++)
+			block_copy[i][j] = block[i][j];
+	}
+
+	// X, Y init
+	*countX = 0;
+	*countY = 0;
 }
 
 int main() {
@@ -353,133 +406,283 @@ int main() {
 	}
 
 	vector<coordinate> number[MAX_NUM];
+
 	// 총 5번 반복
 	for (int n = 0; n < 5; n++)
 	{
-		// 1. 같은 숫자가 어디에 있는지 확인하기
-		// 숫자마다 개수랑 위치를 적기엔 좀 그런가 1024까지 10개..? 괜찮을지도..?
-		// 위 방법이 괜찮으려나
-		// struct로 좌표를 만들어서 그걸 vector안에 넣어서 배열로 10개 관리...
-		make_vector(block, number, N);
-		// vector안에 같은수(개수)가 2개 이상인 애들을 대상으로,
-		// x좌표, y좌표끼리 빼서 더 큰 쪽의 방향으로 밀기
-		// (y끼리 뺐는데 0이라면 가로에 있는 애들이 같은 선상에 있다는 얘기, 좌우(x쪽)로 밀어야함)
-		// 아니지, 다른 애들 상태도 봐야하는데
-		// 좌표 빼서 0인 애들이 많은 방향으로 밀기
-		// 양쪽 중에 둘다 해보고? 다음에 할 일이 많은 쪽으로 밀기...
-
-		// 음...
-		// 근데 같은 수가 3개 이상일땐 차이도 3개가 나와야할텐디
-		// 으아아아아아아아ㅓㅁㅇ리ㅏㅁ어 ㅁ이ㅏㅓㅁ이ㅏㅇㄴ머ㅏㅣㅁㅇ
-		// 그럼 빼서 더 큰쪽으로 방향을 정해서 return, 그 방향이 더 많은 쪽으로 밀기
-
-		// 좌표 차에 따라 count
-		int countX = 0;
-		int countY = 0;
-		decide_diretion(number, &countX, &countY);
-
-		// direction_X, Y에 담긴 숫자를 비교해서 더 많은 쪽의 방향으로 밀기,
-		// x라면 그 중에서도 왼쪽, 오른쪽 둘 다 밀어보고 다음에 할일이 더 많은 쪽으로 밀건데...
-		// 이게 되나? 미는 것도 문제같은데 ㅋㅋㅋ
-		// 뭐 해보면 알겠징...
-
-		// 역시 근데 둘다 해보는건 좀 그런듯
-		// 아닌가 ㅁ?ㄹ
-		// 일단 한번만 해보는 걸로 할까...
-		// 근데 그러면 합쳐질 수, 합쳐지고 난 수, 합쳐지고 난 수와 같은 수의 위치, 다른 수의 위치를 모두 알고 있어야 할 것 같은뎅
-		//int** block_copy = block; //이게 되나? 생각해보니까 포인터라 그냥 참조하는 거네 ㅋㅋ
-		int** block_copy = new int* [N];
-		for (int i = 0; i < N; i++)
-			block_copy[i] = new int[N];
-
-		// 입력값 받기
-		for (int i = 0; i < N; i++)
-		{
-			for (int j = 0; j < N; j++)
-				block_copy[i][j] = block[i][j];
-		}
-
-		//int** block_copy2 = block; // 메모리 제한에서 걸리면 어떡하지 ㅋㅋㅋㅋㅋㅋㅋㅋ
-		int** block_copy2 = new int* [N];
-		for (int i = 0; i < N; i++)
-			block_copy2[i] = new int[N];
-
-		// 입력값 받기
-		for (int i = 0; i < N; i++)
-		{
-			for (int j = 0; j < N; j++)
-				block_copy2[i][j] = block[i][j];
-		}
-
 		vector<coordinate> number_copy[MAX_NUM];
 		int countX_copy = 0;
 		int countY_copy = 0;
 
-		if (countX > countY)
+		int** block_copy = new int* [N];
+		for (int i = 0; i < N; i++)
+			block_copy[i] = new int[N];
+
+		enum {
+			UP, DOWN, LEFT, RIGHT
+		};
+
+		int countDirection[4] = { 0, };
+		// block, number를 복사 및 count들 초기화
+		init(N, block, block_copy, number_copy, &countX_copy, &countY_copy);
+
+		// 왼쪽
+		push_left(block_copy, N);
+		// 이 다음에 count 더해보기..?
+		make_vector(block_copy, number_copy, N);
+		countDirection[LEFT] = decide_diretion(number_copy, &countX_copy, &countY_copy);
+		//for (int i = 0; i < N; i++)
+		//{
+		//	for (int j = 0; j < N; j++)
+		//		cout << block_copy[i][j] << "\t";
+		//	cout << endl;
+		//}
+		//cout << endl;
+
+
+		// 오른쪽(하기 전에 block_copy부터 원상태로
+		init(N, block, block_copy, number_copy, &countX_copy, &countY_copy);
+
+		// 오른쪽
+		push_right(block_copy, N);
+		make_vector(block_copy, number_copy, N);
+		countDirection[RIGHT] = decide_diretion(number_copy, &countX_copy, &countY_copy);
+		//for (int i = 0; i < N; i++)
+		//{
+		//	for (int j = 0; j < N; j++)
+		//		cout << block_copy[i][j] << "\t";
+		//	cout << endl;
+		//}
+		//cout << endl;
+
+
+		// 위쪽
+		init(N, block, block_copy, number_copy, &countX_copy, &countY_copy);
+		push_up(block_copy, N);
+		// 이 다음에 count 더해보기..?
+		make_vector(block_copy, number_copy, N);
+		countDirection[UP] = decide_diretion(number_copy, &countX_copy, &countY_copy);
+		//for (int i = 0; i < N; i++)
+		//{
+		//	for (int j = 0; j < N; j++)
+		//		cout << block_copy[i][j] << "\t";
+		//	cout << endl;
+		//}
+		//cout << endl;
+
+
+		// 아래쪽
+		init(N, block, block_copy, number_copy, &countX_copy, &countY_copy);
+		push_down(block_copy, N);
+		make_vector(block_copy, number_copy, N);
+		countDirection[DOWN] = decide_diretion(number_copy, &countX_copy, &countY_copy);
+		//for (int i = 0; i < N; i++)
+		//{
+		//	for (int j = 0; j < N; j++)
+		//		cout << block_copy[i][j] << "\t";
+		//	cout << endl;
+		//}
+		//cout << endl;
+
+		// 가장 큰 값을 찾아서 그 방향으로 실제 움직이기
+		vector<int> maxDirection;
+		int maxIdx = 0;
+		for (int i = 1; i < 4; i++)
 		{
-			// 왼쪽
-			push_left(block_copy, N);
-			// 이 다음에 count 더해보기..?
-			make_vector(block_copy, number_copy, N);
-			int leftCount = decide_diretion(number_copy, &countX_copy, &countY_copy);
-
-			// 오른쪽
-			push_right(block_copy2, N);
-			make_vector(block_copy2, number_copy, N);
-			int rightCount = decide_diretion(number_copy, &countX_copy, &countY_copy);
+			if (countDirection[maxIdx] == countDirection[i])
+			{
+				maxDirection.push_back(maxIdx);
+				maxDirection.push_back(i);
+			}
 
 
-			// 둘이 비교해서 이후에 할 게 더 많은 쪽?으로 옮기기
-			if (leftCount > rightCount)
-				push_left(block, N); // 찐으로 옮기기
-			else
-				push_right(block, N);
+			else if (countDirection[maxIdx] < countDirection[i])
+				maxIdx = i;
 
-			// 결과 보기
-			//for (int i = 0; i < N; i++)
-			//{
-			//	for (int j = 0; j < N; j++)
-			//		cout << block[i][j] << "\t";
-			//	cout << endl;
-			//}
-			//cout << endl;
 		}
-		else
+		// 난수 생성
+		random_device rd;
+		mt19937 gen(rd());
+		uniform_int_distribution<int> dis(0, maxDirection.size() - 1);
+
+		if (maxDirection.size() > 0)
 		{
-			// 위쪽
-			push_up(block_copy, N);
-			// 이 다음에 count 더해보기..?
-			make_vector(block_copy, number_copy, N);
-			int upCount = decide_diretion(number_copy, &countX_copy, &countY_copy);
-
-			// 오른쪽
-			push_down(block_copy2, N);
-			make_vector(block_copy2, number_copy, N);
-			int downCount = decide_diretion(number_copy, &countX_copy, &countY_copy);
-
-
-			// 둘이 비교해서 이후에 할 게 더 많은 쪽?으로 옮기기
-			if (upCount > downCount)
-				push_up(block, N); // 찐으로 옮기기
-			else
-				push_down(block, N);
-
-			// 결과 보기
-			//for (int i = 0; i < N; i++)
-			//{
-			//	for (int j = 0; j < N; j++)
-			//		cout << block[i][j] << "\t";
-			//	cout << endl;
-			//}
-			//cout << endl;
+			// 0부터 size -1 만큼까지
+			maxIdx = maxDirection.at(dis(gen));
 		}
+
+		// maxIdx랑 같은 애는 하나는 꼭 있고,
+		// 다음으로 같은 애가 있으면 미ㅓㄹ이마ㅓ미ㅏ머ㅣㅏ
+
+		// 만약 가야할 방향이 다 같이 나온다면
+		// 0이 더 많은 쪽으로 가기
+		// 그래도 모르겠다면 랜덤..?ㅋㅋㅋㅋㅋㅋㅋ
+		// 랜덤? 좋을지도
+
+		switch (maxIdx)
+		{
+		case UP :
+			push_up(block, N);
+			break;
+
+		case DOWN :
+			push_down(block, N);
+			break;
+
+		case LEFT :
+			push_left(block, N);
+			break;
+
+		case RIGHT :
+			push_right(block, N);
+			break;
+
+		default:
+			break;
+		}
+
+		 //결과 보기
+		for (int i = 0; i < N; i++)
+		{
+			for (int j = 0; j < N; j++)
+				cout << block[i][j] << "\t";
+			cout << endl;
+		}
+		cout << endl;
 
 		for (int n = 0; n < N; n++)
 			delete[] block_copy[n];
 		delete[] block_copy;
-		for (int n = 0; n < N; n++)
-			delete[] block_copy2[n];
-		delete[] block_copy2;
+
+	//	// 1. 같은 숫자가 어디에 있는지 확인하기
+	//	// 숫자마다 개수랑 위치를 적기엔 좀 그런가 1024까지 10개..? 괜찮을지도..?
+	//	// 위 방법이 괜찮으려나
+	//	// struct로 좌표를 만들어서 그걸 vector안에 넣어서 배열로 10개 관리...
+	//	make_vector(block, number, N);
+	//	// vector안에 같은수(개수)가 2개 이상인 애들을 대상으로,
+	//	// x좌표, y좌표끼리 빼서 더 큰 쪽의 방향으로 밀기
+	//	// (y끼리 뺐는데 0이라면 가로에 있는 애들이 같은 선상에 있다는 얘기, 좌우(x쪽)로 밀어야함)
+	//	// 아니지, 다른 애들 상태도 봐야하는데
+	//	// 좌표 빼서 0인 애들이 많은 방향으로 밀기
+	//	// 양쪽 중에 둘다 해보고? 다음에 할 일이 많은 쪽으로 밀기...
+
+	//	// 음...
+	//	// 근데 같은 수가 3개 이상일땐 차이도 3개가 나와야할텐디
+	//	// 으아아아아아아아ㅓㅁㅇ리ㅏㅁ어 ㅁ이ㅏㅓㅁ이ㅏㅇㄴ머ㅏㅣㅁㅇ
+	//	// 그럼 빼서 더 큰쪽으로 방향을 정해서 return, 그 방향이 더 많은 쪽으로 밀기
+
+	//	// 좌표 차에 따라 count
+	//	int countX = 0;
+	//	int countY = 0;
+	//	decide_diretion(number, &countX, &countY);
+	//	// 이렇게하니까 4242는 못하는데도 countX +2가 돼버리네
+	//	// 그냥 붙어있는게 있으면 1순위로 바꾸기 이런거 해야할 것 같은데
+	//	// 이렇게 된이상 그냥 4방향 다해보고 좋은걸로 할까..?(이게 진짜 좋은방법일수도 ㅋㅋ)
+	//	// 근데 그게 알고리즘이 맞나...?
+
+	//	// direction_X, Y에 담긴 숫자를 비교해서 더 많은 쪽의 방향으로 밀기,
+	//	// x라면 그 중에서도 왼쪽, 오른쪽 둘 다 밀어보고 다음에 할일이 더 많은 쪽으로 밀건데...
+	//	// 이게 되나? 미는 것도 문제같은데 ㅋㅋㅋ
+	//	// 뭐 해보면 알겠징...
+
+	//	// 역시 근데 둘다 해보는건 좀 그런듯
+	//	// 아닌가 ㅁ?ㄹ
+	//	// 일단 한번만 해보는 걸로 할까...
+	//	// 근데 그러면 합쳐질 수, 합쳐지고 난 수, 합쳐지고 난 수와 같은 수의 위치, 다른 수의 위치를 모두 알고 있어야 할 것 같은뎅
+	//	//int** block_copy = block; //이게 되나? 생각해보니까 포인터라 그냥 참조하는 거네 ㅋㅋ
+	//	int** block_copy = new int* [N];
+	//	for (int i = 0; i < N; i++)
+	//		block_copy[i] = new int[N];
+
+	//	// 입력값 받기
+	//	for (int i = 0; i < N; i++)
+	//	{
+	//		for (int j = 0; j < N; j++)
+	//			block_copy[i][j] = block[i][j];
+	//	}
+
+	//	//int** block_copy2 = block; // 메모리 제한에서 걸리면 어떡하지 ㅋㅋㅋㅋㅋㅋㅋㅋ
+	//	int** block_copy2 = new int* [N];
+	//	for (int i = 0; i < N; i++)
+	//		block_copy2[i] = new int[N];
+
+	//	// 입력값 받기
+	//	for (int i = 0; i < N; i++)
+	//	{
+	//		for (int j = 0; j < N; j++)
+	//			block_copy2[i][j] = block[i][j];
+	//	}
+
+	//	vector<coordinate> number_copy[MAX_NUM];
+	//	int countX_copy = 0;
+	//	int countY_copy = 0;
+
+	//	if (countX > countY)
+	//	{
+	//		// 왼쪽
+	//		push_left(block_copy, N);
+	//		// 이 다음에 count 더해보기..?
+	//		make_vector(block_copy, number_copy, N);
+	//		int leftCount = decide_diretion(number_copy, &countX_copy, &countY_copy);
+
+	//		// 오른쪽
+	//		push_right(block_copy2, N);
+	//		make_vector(block_copy2, number_copy, N);
+	//		int rightCount = decide_diretion(number_copy, &countX_copy, &countY_copy);
+
+
+	//		// 둘이 비교해서 이후에 할 게 더 많은 쪽?으로 옮기기
+	//		// 거리가 더 가까운 쪽을 먼저하기
+	//		if (leftCount < rightCount)
+	//			push_left(block, N); // 찐으로 옮기기
+	//		else
+	//			push_right(block, N);
+
+	//		// 결과 보기
+	//		for (int i = 0; i < N; i++)
+	//		{
+	//			for (int j = 0; j < N; j++)
+	//				cout << block[i][j] << "\t";
+	//			cout << endl;
+	//		}
+	//		cout << endl;
+	//	}
+	//	else
+	//	{
+	//		// 위쪽
+	//		push_up(block_copy, N);
+	//		// 이 다음에 count 더해보기..?
+	//		make_vector(block_copy, number_copy, N);
+	//		int upCount = decide_diretion(number_copy, &countX_copy, &countY_copy);
+
+	//		// 오른쪽
+	//		push_down(block_copy2, N);
+	//		make_vector(block_copy2, number_copy, N);
+	//		int downCount = decide_diretion(number_copy, &countX_copy, &countY_copy);
+
+
+	//		// 둘이 비교해서 이후에 할 게 더 많은 쪽?으로 옮기기
+	//		if (upCount < downCount)
+	//			push_up(block, N); // 찐으로 옮기기
+	//		else
+	//			push_down(block, N);
+
+	//		 //결과 보기
+	//		for (int i = 0; i < N; i++)
+	//		{
+	//			for (int j = 0; j < N; j++)
+	//				cout << block[i][j] << "\t";
+	//			cout << endl;
+	//		}
+	//		cout << endl;
+	//	}
+
+	//	for (int n = 0; n < N; n++)
+	//		delete[] block_copy[n];
+	//	delete[] block_copy;
+	//	for (int n = 0; n < N; n++)
+	//		delete[] block_copy2[n];
+	//	delete[] block_copy2;
 	}
 
 	// 반복이 끝난 후
@@ -487,14 +690,21 @@ int main() {
 	// block을 for 2번으로 가져오든,
 	// vector를 또 만들어서 가져오든?
 	make_vector(block, number, N);
-	for (int i = MAX_NUM - 1; i >= 0; i--)
+
+	int max = 0;
+	for (int i = MAX_NUM - 1; i > 0; i--)
 	{
 		if (number[i].size() > 0)
 		{
-			cout << pow(2, i);
+			max = pow(2, i);
 			break;
 		}
 	}
+
+	if (max < 2)
+		max = 2;
+
+	cout << max;
 
 	for (int n = 0; n < N; n++)
 		delete[] block[n];
