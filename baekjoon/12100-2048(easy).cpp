@@ -37,6 +37,24 @@
 * 그리고 아무 방향이나 해도 상관없을 때 어떻게 할지도 문제고
 * 거리가 1일때만 그 방향으로 return되게 해놨는데 왜 저렇게 많이 뜰 수 있는지도 의문...
 * 생각보다 고쳐야할 게 많아서 이쯤에서 포기...
+* 
+* 2023-05-02
+* 블록마다 4방향 중에 똑같은숫자가 있다면 그 방향으로 +1 count
+* 0이 있으면 숫자가 나올때까지
+* 그 후에 방향카운트가 가장 큰 방향으로 ㄱㄱ
+* 만약 카운트가 같은 게 있다면 둘 중 랜덤?
+* 
+* 위와 같은 방식으로 다시 새로 만들어봤는데
+* 또 입구컷당함 ㅋㅅㅋ..
+* 반례도 사람들 것 중에
+0 64 2 1024
+2 512 8 0
+0 32 512 256
+64 64 8 2
+
+이게 너무 강력했타
+답은 2048.. 머리로 풀어도 어려움 ㄷㄷ
+왼 - 위 - 왼 - 아래 - 왼(오)
 */
 
 // 1. 0을 제외한 블록 중 같은 게 있으면 일단 같은 선상에 있도록 해야하나
@@ -57,9 +75,13 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include <random>
+#include <ctime>
+#include <cstdlib>
 
 #define MAX_NUM 11
+enum {
+	UP, DOWN, LEFT, RIGHT
+};
 
 using namespace std;
 
@@ -73,6 +95,108 @@ struct DR {
 	int delta = 0;
 };
 
+// (숫자가 있는 블록이라면) 왼쪽 방향으로 쭉 가보기
+int UpCount(int** block, int N)
+{
+	int count = 0;
+	// (숫자가 있는) 블록마다
+	// 위 방향으로 쭉 가면서 숫자가 나오면
+	// 그 숫자와 비교해서 같으면 count++
+	for (int i = 0; i < N; i++)
+	{
+		for (int j = 0; j < N; j++)
+		{
+			int current = block[i][j];
+			for (int k = i - 1; k >= 0; k--)
+			{
+				if (block[k][j] == 0) // 0이라면 다음 블록으로
+					continue;
+				else if (block[k][j] > 0) // 숫자가 있다면
+				{
+					if (current == block[k][j]) // 그리고 그 숫자가 자신과 같은 숫자라면
+						count++;
+					break; // 이 블록은 끝
+				}
+			}
+		}
+	}
+
+	return count;
+}
+
+int DownCount(int** block, int N)
+{
+	int count = 0;
+	for (int i = 0; i < N; i++)
+	{
+		for (int j = 0; j < N; j++)
+		{
+			int current = block[i][j];
+			for (int k = i + 1; k < N; k++)
+			{
+				if (block[k][j] == 0) // 0이라면 다음 블록으로
+					continue;
+				else if (block[k][j] > 0) // 숫자가 있다면
+				{
+					if (current == block[k][j]) // 그리고 그 숫자가 자신과 같은 숫자라면
+						count++;
+					break; // 같은 숫자가 아니어도 이 블록은 끝
+				}
+			}
+		}
+	}
+	return count;
+}
+
+int LeftCount(int** block, int N)
+{
+	int count = 0;
+	for (int i = 0; i < N; i++)
+	{
+		for (int j = 0; j < N; j++)
+		{
+			int current = block[i][j];
+			for (int k = j - 1; k >= 0; k--)
+			{
+				if (block[i][k] == 0) // 0이라면 다음 블록으로
+					continue;
+				else if (block[i][k] > 0) // 숫자가 있다면
+				{
+					if (current == block[i][k]) // 그리고 그 숫자가 자신과 같은 숫자라면
+						count++;
+					break; // 같은 숫자가 아니어도 이 블록은 끝
+				}
+			}
+		}
+	}
+	return count;
+}
+
+int RightCount(int** block, int N)
+{
+	int count = 0;
+	for (int i = 0; i < N; i++)
+	{
+		for (int j = 0; j < N; j++)
+		{
+			int current = block[i][j];
+			for (int k = j + 1; k < N; k++)
+			{
+				if (block[i][k] == 0) // 0이라면 다음 블록으로
+					continue;
+				else if (block[i][k] > 0) // 숫자가 있다면
+				{
+					if (current == block[i][k]) // 그리고 그 숫자가 자신과 같은 숫자라면
+						count++;
+					break; // 같은 숫자가 아니어도 이 블록은 끝
+				}
+			}
+		}
+	}
+	return count;
+}
+
+/*
 DR direction(coordinate A, coordinate B)
 {
 	DR dr;
@@ -173,6 +297,8 @@ int decide_diretion(vector<coordinate>* number, int *countX, int *countY)
 
 	return (*countX) + (*countY);
 }
+
+*/
 
 void push_left(int** block, int N)
 {
@@ -368,11 +494,12 @@ void push_down(int** block, int N)
 	updatedNumber.clear();
 }
 
-void init(int N, int** block, int** block_copy, vector<coordinate>* number, int* countX, int* countY)
+
+void InitBlock(int N, int** block, int** block_copy, int* futureCount) //, vector<coordinate>* number, int* countX, int* countY)
 {
 	// number init
-	for (int i = 0; i < MAX_NUM; i++)
-		number[i].clear();
+	//for (int i = 0; i < MAX_NUM; i++)
+	//	number[i].clear();
 
 	// block init
 	for (int i = 0; i < N; i++)
@@ -381,9 +508,30 @@ void init(int N, int** block, int** block_copy, vector<coordinate>* number, int*
 			block_copy[i][j] = block[i][j];
 	}
 
-	// X, Y init
-	*countX = 0;
-	*countY = 0;
+	for (int i = 0; i < 4; i++)
+	{
+		futureCount[i] = 0;
+	}
+
+	//// X, Y init
+	//*countX = 0;
+	//*countY = 0;
+}
+
+int MaxFutureCount(int** block, int N, int futureCount[])
+{
+	futureCount[UP] = UpCount(block, N);// *2;
+	futureCount[DOWN] = DownCount(block, N);// *2;
+	futureCount[LEFT] = LeftCount(block, N);// *2;
+	futureCount[RIGHT] = RightCount(block, N);// *2;
+
+	int max = 0;
+	for (int i = 0; i < 4; i++)
+	{
+		if (max <= futureCount[i])
+			max = futureCount[i];
+	}
+	return max;
 }
 
 int main() {
@@ -393,6 +541,8 @@ int main() {
 	// 일단 배열 만들기
 	int N = 0;
 	cin >> N;
+	if (N < 1 || N > 20)
+		return 0;
 
 	int** block = new int*[N];
 	for (int i = 0; i < N; i++)
@@ -402,9 +552,176 @@ int main() {
 	for (int i = 0; i < N; i++)
 	{
 		for (int j = 0; j < N; j++)
-			cin >> block[i][j];
+		{
+			int input = 0;
+			cin >> input;
+			if ((input != 0 && input < 2) || (input > 1024) || (input % 2 == 1))
+				return 0;
+			block[i][j] = input;
+		}
 	}
 
+	// block의 복사본 만들기
+	int** block_copy = new int* [N];
+	for (int i = 0; i < N; i++)
+		block_copy[i] = new int[N];
+
+
+	int counts[4] = { 0, };
+
+	// 랜덤 시드
+	srand(time(NULL));
+
+	for (int n = 0; n < 5; n++)
+	{
+		// 미래의 방향도 생각할 플래그
+		//bool futureFlag = true;
+		// 방향별로 count를 재서
+		counts[UP] = UpCount(block, N);
+		counts[DOWN] = DownCount(block, N);
+		counts[LEFT] = LeftCount(block, N);
+		counts[RIGHT] = RightCount(block, N);
+
+		//for (int i = 0; i < 4; i++)
+		//{
+		//	if (counts[i] > 0)
+		//		futureFlag = false;
+		//}
+
+		// 미래의 방향을 생각한다면 count 갱신
+		// 근데 이렇게 하니까
+		// 네 방향으로 움직였다고 가정한 뒤, count를 세려면
+		// 방향마다 네 방향으로 움직인 count를 세야되네
+		// 그 중에서도 가장 큰 count가 나온 애를 걔의 count로 써야하네
+		// ....16번?
+		int futureCount[4] = { 0, };
+		//if (futureFlag == true)
+		//{
+			InitBlock(N, block, block_copy, futureCount);
+			//UP
+			push_up(block_copy, N);
+			counts[UP]  += MaxFutureCount(block_copy, N, futureCount);
+
+			//DOWN
+			InitBlock(N, block, block_copy, futureCount);
+			push_down(block_copy, N);
+			counts[DOWN] += MaxFutureCount(block_copy, N, futureCount);
+
+			//LEFT
+			InitBlock(N, block, block_copy, futureCount);
+			push_left(block_copy, N);
+			counts[LEFT] += MaxFutureCount(block_copy, N, futureCount);
+
+			//RIGHT
+			InitBlock(N, block, block_copy, futureCount);
+			push_right(block_copy, N);
+			counts[RIGHT] += MaxFutureCount(block_copy, N, futureCount);
+		//}
+
+
+		// 근데 이렇게하니까
+		// 오른쪽으로 간 뒤에 알 수 있는 방향은 생각못하니까
+		// 미래의 count를 재야하나
+		// 
+		// 미래의 count재기..
+		// 우선 block의 복사본을 만든 다음에
+		// 그 복사본을 이리저리 움직여보고
+		// 그러고 난 뒤의 count를 재기
+		// 어차피 init할거면
+
+		// 근데 이렇게 하니까
+		// 위, 아래 랜덤으로 나와서
+		// 위로 가야 다음께 좋은데
+		// 그럼 +=을 해서 구하자
+		// 위로 가야 다음 거 할게 나오는데
+		// 근데 그럼 1번 옮겨서 다음에 할게 없는거랑
+		// 1번 옮겨서 다음에 할게 하나 있는거랑 똑같이 나오자나
+		// 그럼 다음에 할 게 있는게 우선적으로 뽑히게 해야하나;;;;
+		// 그럼 미래카운트가 2배의 가중치를 갖도록 하자
+		
+
+		// 이렇게하니까
+		// 현재 합쳐서 게임을 끝낼 수 있는데 합치면 count가 0이 되니까
+		// 합치지 않는 방향으로 push하네
+		// 흠....
+		// 현재 count도 다 구해서 그게 모두 0이면 미래의 것으로?
+		// 
+		
+		// 왼쪽으로 틀어본 다음에
+
+
+		// 가장 높은 방향으로 밀기
+		// 근데 count가 서로 같은게 있다면 그들 중에서 랜덤하게 나오기
+		vector<int> equalCountIdxs;
+		int maxCountIdx = UP;
+		for (int i = 1; i < 4; i++)
+		{
+			// 근데 2 2 3 4 이런식으로 있다면?
+			// max를 구한 다음에 비교를 해야겠네
+			if (counts[maxCountIdx] < counts[i])
+				maxCountIdx = i;
+		}
+
+		for (int i = 0; i < 4; i++)
+		{
+			if (counts[maxCountIdx] == counts[i])
+			{
+				equalCountIdxs.push_back(i);
+			}
+		}
+
+		if (equalCountIdxs.size() > 0)
+		{
+			maxCountIdx = equalCountIdxs.at(rand() % equalCountIdxs.size()); // 0부터 size-1 만큼
+		}
+
+		// 최종 maxCountIdx로 나온 방향으로 push
+		switch (maxCountIdx)
+		{
+		case UP:
+			push_up(block, N);
+			break;
+		case DOWN:
+			push_down(block, N);
+			break;
+		case LEFT:
+			push_left(block, N);
+			break;
+		case RIGHT:
+			push_right(block, N);
+			break;
+		default:
+			break;
+		}
+
+		////결과 보기
+		//for (int i = 0; i < N; i++)
+		//{
+		//	for (int j = 0; j < N; j++)
+		//		std::cout << block[i][j] << "\t";
+		//	std::cout << endl;
+		//}
+		//std::cout << endl;
+	}
+
+	// 블록들 중에서 가장 큰 숫자를 출력
+	int max = 0;
+	for (int i = 0; i < N; i++)
+	{
+		for (int j = 0; j < N; j++)
+		{
+			if (max < block[i][j])
+				max = block[i][j];
+		}
+	}
+
+	if (max < 2)
+		max = 2;
+
+	std::cout << max;
+
+	
+	/*
 	vector<coordinate> number[MAX_NUM];
 
 	// 총 5번 반복
@@ -705,6 +1022,7 @@ int main() {
 		max = 2;
 
 	cout << max;
+	*/
 
 	for (int n = 0; n < N; n++)
 		delete[] block[n];
