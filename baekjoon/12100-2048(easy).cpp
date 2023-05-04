@@ -534,7 +534,7 @@ int MaxFutureCount(int** block, int N, int futureCount[])
 	return max;
 }
 
-int main() {
+/*int main() {
 	// °á°ú °ª
 	int maxNumber_ans = 0;
 
@@ -1022,11 +1022,12 @@ int main() {
 		max = 2;
 
 	cout << max;
-	*/
+	
 
 	for (int n = 0; n < N; n++)
 		delete[] block[n];
 	delete[] block;
 	return 0;
 }
+*/
 

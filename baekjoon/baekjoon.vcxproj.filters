@@ -24,5 +24,8 @@
     <ClCompile Include="12100-2048%28easy%29.cpp">
       <Filter>소스 파일\samsung SW test</Filter>
     </ClCompile>
+    <ClCompile Include="3190-snake.cpp">
+      <Filter>소스 파일\samsung SW test</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
